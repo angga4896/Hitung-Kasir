@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitung Uang Kasir - Kedae Mattowa</title>
+    <!-- PWA Manifest & Meta -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch(err => console.log('SW Registration Failed', err));
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <div class="max-w-5xl mx-auto p-4 sm:p-6 mb-12">
+        <header class="mb-6 text-center">
+            <h1 class="text-2xl font-bold text-slate-900">Hitung Uang Kasir</h1>
+            <p class="text-sm text-slate-500">Kedae Mattowa - Kalkulator Kasir, P-Tiket, Rekonsiliasi, & Stok Uang Tukaran.</p>
+        </header>
+
+        <!-- GRID UTAMA -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            
+            <!-- 1. INPUT KASIR (FISIK) -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">1. Hitung Uang Kasir (Fisik)</h2>
+                <div id="denominations-container" class="space-y-2.5">
+                    <!-- Dynamic via JS -->
+                </div>
+                <div class="mt-4 pt-3 border-t flex justify-between items-center font-bold">
+                    <span>Total Uang Kasir:</span>
+                    <span id="total-cash" class="text-blue-600 text-lg">Rp 0</span>
+                </div>
+            </section>
+
+            <!-- 2. DATA FRANCHISE & P-TIKET -->
+            <div class="space-y-6">
+                <!-- Data Mesin Kasir Franchise -->
+                <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">2. Data Mesin Kasir Franchise</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Uang Tunai di Cashdrawer (POS)</label>
+                            <input type="number" id="pos-cash" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="0" oninput="calculateAll()">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Total QRIS / Non-Tunai Aplikasi Lain</label>
+                            <input type="number" id="app-qris" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="0" oninput="calculateAll()">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Total QRIS di Franchise (POS)</label>
+                            <input type="number" id="pos-qris" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="0" oninput="calculateAll()">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- P-Tiket / Patty Cash Info -->
+                <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">3. Rincian P-Tiket (Rp 500 - Rp 50.000)</h2>
+                    <div id="pticket-details" class="space-y-1 text-sm text-slate-700 mb-3 max-h-36 overflow-y-auto">
+                        <!-- Detail P-Tiket -->
+                    </div>
+                    <div class="border-t border-slate-200 pt-2 flex justify-between font-semibold">
+                        <span>Total Patty Cash / P-Tiket:</span>
+                        <span id="total-pticket" class="text-emerald-600">Rp 0</span>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+
+        <!-- 3. DATABASE UANG TUKARAN (BELAKANG) -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-2">4. Database Stok Uang Tukaran (Belakang)</h2>
+            <p class="text-xs text-slate-500 mb-4">Kelola stok lembar cadangan di belakang dan pantau bandelan secara otomatis.</p>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 text-xs uppercase tracking-wider">
+                            <th class="p-2.5 border-b">Pecahan</th>
+                            <th class="p-2.5 border-b text-right">Lembar Cadangan</th>
+                            <th class="p-2.5 border-b text-right">Total Nilai</th>
+                            <th class="p-2.5 border-b text-right">Bandelan</th>
+                            <th class="p-2.5 border-b text-right">Jumlah / Nilai Bandel</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reserve-container" class="text-sm">
+                        <!-- Dynamic via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 pt-3 border-t flex justify-between items-center font-bold bg-slate-50 p-3 rounded-lg">
+                <span>Total Seluruh Uang Tukaran di Belakang:</span>
+                <span id="total-reserve" class="text-indigo-600 text-lg">Rp 0</span>
+            </div>
+        </section>
+
+        <!-- 4. HASIL REKONSILIASI & SELISIH -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">5. Hasil Rekonsiliasi Akhir</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-lg border" id="box-diff-cash">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm font-medium text-slate-600">Selisih Uang Tunai (Lebih / Kurang)</span>
+                        <span id="status-cash" class="text-xs px-2 py-0.5 rounded-full font-semibold">N/A</span>
+                    </div>
+                    <p id="diff-cash" class="text-2xl font-bold">Rp 0</p>
+                </div>
+
+                <div class="p-4 rounded-lg border" id="box-diff-qris">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm font-medium text-slate-600">Selisih QRIS / Non-Tunai</span>
+                        <span id="status-qris" class="text-xs px-2 py-0.5 rounded-full font-semibold">N/A</span>
+                    </div>
+                    <p id="diff-qris" class="text-2xl font-bold">Rp 0</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxmqKV_RehAioIjEWHUAV_nSX7N9fduoEyQZbTv-JTjy8Lul1VzaIDeEtgumbsmrQ1E5g/exec";
+
+        const cashierDenominations = [
+            { value: 500, label: 'Rp 500', defaultQty: 2, eligiblePTicket: true },
+            { value: 1000, label: 'Rp 1.000', defaultQty: 36, eligiblePTicket: true },
+            { value: 2000, label: 'Rp 2.000', defaultQty: 19, eligiblePTicket: true },
+            { value: 5000, label: 'Rp 5.000', defaultQty: 15, eligiblePTicket: true },
+            { value: 10000, label: 'Rp 10.000', defaultQty: 19, eligiblePTicket: true },
+            { value: 20000, label: 'Rp 20.000', defaultQty: 7, eligiblePTicket: true },
+            { value: 50000, label: 'Rp 50.000', defaultQty: 1, eligiblePTicket: true },
+            { value: 100000, label: 'Rp 100.000', defaultQty: 0, eligiblePTicket: false },
+        ];
+
+        let reserveDenominations = [
+            { value: 500, label: 'Rp 500', defaultQty: 100 },
+            { value: 1000, label: 'Rp 1.000', defaultQty: 100 },
+            { value: 2000, label: 'Rp 2.000', defaultQty: 100 },
+            { value: 5000, label: 'Rp 5.000', defaultQty: 100 },
+            { value: 10000, label: 'Rp 10.000', defaultQty: 100 },
+            { value: 20000, label: 'Rp 20.000', defaultQty: 100 },
+            { value: 50000, label: 'Rp 50.000', defaultQty: 5 },
+            { value: 100000, label: 'Rp 100.000', defaultQty: 9 },
+        ];
+
+        function initApp() {
+            renderCashierInputs();
+            renderReserveTable();
+            calculateAll();
+        }
+
+        function renderCashierInputs() {
+            const cashContainer = document.getElementById('denominations-container');
+            cashContainer.innerHTML = '';
+            cashierDenominations.forEach(denom => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100';
+                div.innerHTML = `
+                    <div>
+                        <span class="font-medium text-sm text-slate-700">${denom.label}</span>
+                        ${!denom.eligiblePTicket ? '<span class="block text-[10px] text-amber-600 font-medium">Bukan P-Tiket</span>' : ''}
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="number" min="0" value="${denom.defaultQty}" data-value="${denom.value}" 
+                            class="qty-cash-input w-20 px-2 py-1 text-right text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            oninput="calculateAll()">
+                        <span class="text-xs text-slate-400 w-10">lembar</span>
+                    </div>
+                `;
+                cashContainer.appendChild(div);
+            });
+        }
+
+        function renderReserveTable() {
+            const reserveContainer = document.getElementById('reserve-container');
+            reserveContainer.innerHTML = '';
+            reserveDenominations.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-100 hover:bg-slate-50/50';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-medium text-slate-700">${res.label}</td>
+                    <td class="p-2.5 text-right">
+                        <input type="number" min="0" value="${res.defaultQty}" data-value="${res.value}" 
+                            class="qty-reserve-input w-24 px-2 py-1 text-right text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            oninput="calculateAll()">
+                    </td>
+                    <td class="p-2.5 text-right font-semibold text-slate-800" id="res-total-${res.value}">Rp 0</td>
+                    <td class="p-2.5 text-right text-slate-500" id="res-bandel-${res.value}">0,0</td>
+                    <td class="p-2.5 text-right font-medium text-slate-700" id="res-jumlah-${res.value}">Rp 0</td>
+                `;
+                reserveContainer.appendChild(tr);
+            });
+        }
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+        }
+
+        function calculateAll() {
+            let totalCash = 0;
+            let totalPTicket = 0;
+            let pticketDetailsHTML = '';
+
+            const cashInputs = document.querySelectorAll('.qty-cash-input');
+            cashInputs.forEach(input => {
+                const val = parseInt(input.getAttribute('data-value'));
+                const qty = parseInt(input.value) || 0;
+                const subtotal = val * qty;
+
+                totalCash += subtotal;
+
+                const denomObj = cashierDenominations.find(d => d.value === val);
+                if (denomObj && denomObj.eligiblePTicket) {
+                    totalPTicket += subtotal;
+                    if (qty > 0) {
+                        pticketDetailsHTML += `<div class="flex justify-between"><span>${denomObj.label} (${qty} lembar)</span> <span>${formatRupiah(subtotal)}</span></div>`;
+                    }
+                }
+            });
+
+            if (pticketDetailsHTML === '') {
+                pticketDetailsHTML = '<span class="text-slate-400 italic">Belum ada pecahan P-Tiket.</span>';
+            }
+
+            document.getElementById('total-cash').innerText = formatRupiah(totalCash);
+            document.getElementById('pticket-details').innerHTML = pticketDetailsHTML;
+            document.getElementById('total-pticket').innerText = formatRupiah(totalPTicket);
+
+            let totalReserve = 0;
+            const reserveInputs = document.querySelectorAll('.qty-reserve-input');
+            
+            reserveInputs.forEach(input => {
+                const val = parseInt(input.getAttribute('data-value'));
+                const qty = parseInt(input.value) || 0;
+                const subtotal = val * qty;
+                totalReserve += subtotal;
+
+                const bandel = (qty / 1000).toFixed(1).replace('.', ','); 
+                document.getElementById(`res-total-${val}`).innerText = formatRupiah(subtotal);
+                document.getElementById(`res-bandel-${val}`).innerText = bandel;
+                document.getElementById(`res-jumlah-${val}`).innerText = formatRupiah(subtotal);
+            });
+
+            document.getElementById('total-reserve').innerText = formatRupiah(totalReserve);
+
+            const posCash = parseFloat(document.getElementById('pos-cash').value) || 0;
+            const appQris = parseFloat(document.getElementById('app-qris').value) || 0;
+            const posQris = parseFloat(document.getElementById('pos-qris').value) || 0;
+
+            const diffCash = totalCash - posCash;
+            const diffQris = appQris - posQris;
+
+            const elDiffCash = document.getElementById('diff-cash');
+            const elStatusCash = document.getElementById('status-cash');
+            const boxDiffCash = document.getElementById('box-diff-cash');
+            
+            elDiffCash.innerText = formatRupiah(Math.abs(diffCash));
+            if (diffCash === 0) {
+                elStatusCash.innerText = "PAS / SEIMBANG";
+                elStatusCash.className = "text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700";
+                boxDiffCash.className = "p-4 rounded-lg border border-emerald-200 bg-emerald-50/30";
+            } else if (diffCash > 0) {
+                elStatusCash.innerText = "LEBIH (SURPLUS)";
+                elStatusCash.className = "text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-blue-700";
+                boxDiffCash.className = "p-4 rounded-lg border border-blue-200 bg-blue-50/30";
+                elDiffCash.innerText = "+" + formatRupiah(diffCash);
+            } else {
+                elStatusCash.innerText = "KURANG (MINUS)";
+                elStatusCash.className = "text-xs px-2 py-0.5 rounded-full font-semibold bg-rose-100 text-rose-700";
+                boxDiffCash.className = "p-4 rounded-lg border border-rose-200 bg-rose-50/30";
+                elDiffCash.innerText = "-" + formatRupiah(Math.abs(diffCash));
+            }
+
+            const elDiffQris = document.getElementById('diff-qris');
+            const elStatusQris = document.getElementById('status-qris');
+            const boxDiffQris = document.getElementById('box-diff-qris');
+
+            elDiffQris.innerText = formatRupiah(Math.abs(diffQris));
+            if (diffQris === 0) {
+                elStatusQris.innerText = "PAS / SEIMBANG";
+                elStatusQris.className = "text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700";
+                boxDiffQris.className = "p-4 rounded-lg border border-emerald-200 bg-emerald-50/30";
+            } else if (diffQris > 0) {
+                elStatusQris.innerText = "LEBIH (SURPLUS)";
+                elStatusQris.className = "text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-blue-700";
+                boxDiffQris.className = "p-4 rounded-lg border border-blue-200 bg-blue-50/30";
+                elDiffQris.innerText = "+" + formatRupiah(diffQris);
+            } else {
+                elStatusQris.innerText = "KURANG (MINUS)";
+                elStatusQris.className = "text-xs px-2 py-0.5 rounded-full font-semibold bg-rose-100 text-rose-700";
+                boxDiffQris.className = "p-4 rounded-lg border border-rose-200 bg-rose-50/30";
+                elDiffQris.innerText = "-" + formatRupiah(Math.abs(diffQris));
+            }
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
